@@ -34,6 +34,7 @@ public:
     std::string toString() const;
 
     // Подстановка переменной, вычисление, дифференцирование
+    Expression<T> substitute_all(const std::map<std::string, T>& vars) const;
     Expression substitute(const std::string& var, const T& value) const;
     T evaluate(const std::map<std::string, T>& vars) const;
     Expression differentiate(const std::string& variable) const;

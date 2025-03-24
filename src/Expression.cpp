@@ -64,6 +64,33 @@ template<typename T>
 std::string Expression<T>::toString() const {
     return pImpl->expr;
 }
+template<typename T>
+Expression<T> Expression<T>::substitute(const std::string& var, const T& value) const {
+    std::ostringstream oss;
+    if constexpr (std::is_same_v<T, std::complex<double>>) {
+        oss << "(" << value.real() << "+" << value.imag() << "i)";
+    } else {
+        oss << value;
+    }
+
+    std::string result = pImpl->expr;
+    size_t pos = 0;
+    while ((pos = result.find(var, pos)) != std::string::npos) {
+        result.replace(pos, var.length(), oss.str());
+        pos += oss.str().length();
+    }
+
+    return Expression(result);
+}
+
+template<typename T>
+Expression<T> Expression<T>::substitute_all(const std::map<std::string, T>& vars) const {
+    Expression<T> result = *this;
+    for (const auto& [var, val] : vars) {
+        result = result.substitute(var, val);
+    }
+    return result;
+}
 
 // double
 template Expression<double>::Expression(double);
@@ -92,3 +119,12 @@ template Expression<std::complex<double>> Expression<std::complex<double>>::oper
 template Expression<std::complex<double>> Expression<std::complex<double>>::operator/(const Expression<std::complex<double>>&) const;
 template Expression<std::complex<double>> Expression<std::complex<double>>::operator^(const Expression<std::complex<double>>&) const;
 template std::string Expression<std::complex<double>>::toString() const;
+
+
+// Явные инстанцирования
+template Expression<double> Expression<double>::substitute_all(const std::map<std::string, double>&) const;
+template Expression<std::complex<double>> Expression<std::complex<double>>::substitute_all(const std::map<std::string, std::complex<double>>&) const;
+
+template Expression<double> Expression<double>::substitute(const std::string&, const double&) const;
+template Expression<std::complex<double>> Expression<std::complex<double>>::substitute(const std::string&, const std::complex<double>&) const;
+

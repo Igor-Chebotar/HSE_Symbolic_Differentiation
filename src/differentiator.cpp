@@ -30,9 +30,9 @@ int main(int argc, char* argv[]) {
             }
 
             std::string expr_str = argv[2];
-            Expression<double> expr = parseExpression<double>(expr_str);
-
             std::map<std::string, double> vars;
+
+            // Сначала разбираем переменные
             for (int i = 3; i < argc; ++i) {
                 std::string arg = argv[i];
                 size_t eq = arg.find('=');
@@ -45,6 +45,10 @@ int main(int argc, char* argv[]) {
                 vars[var] = val;
             }
 
+            // Парсим выражение
+            Expression<double> expr = parseExpression<double>(expr_str);
+
+            // Вычисляем с переменными
             double result = expr.evaluate(vars);
             std::cout << result << "\n";
         }

@@ -1,4 +1,5 @@
 #include "../include/Expression.hpp"
+#include "../include/parser.hpp"
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
@@ -38,35 +39,62 @@ Expression<T> Expression<T>::substitute(const std::string& var, const T& value) 
     }
 
     std::string result = pImpl->expr;
+
+    // Заменяем только полные вхождения переменной
     std::regex r("\\b" + var + "\\b");
     result = std::regex_replace(result, r, oss.str());
 
-    return Expression(result);
+    return Expression<T>(result);
 }
+
+
 
 // ===== Простейшее вычисление (для double) =====
 
 template<>
 double Expression<double>::evaluate(const std::map<std::string, double>& vars) const {
-    std::string expr = pImpl->expr;
+    // Подставляем переменные
+    Expression<double> substituted = substitute_all(vars);
+    std::string expr_str = substituted.toString();
 
-    for (const auto& [var, val] : vars) {
-        std::ostringstream oss;
-        oss << val;
-        std::regex r("\\b" + var + "\\b");
-        expr = std::regex_replace(expr, r, oss.str());
+    // Если выражение не изменилось, то мы уже вычислили его
+    if (expr_str == pImpl->expr) {
+        try {
+            return std::stod(expr_str);  // Преобразуем к числу
+        } catch (...) {
+            throw std::runtime_error("Cannot evaluate expression: " + expr_str);
+        }
     }
 
+    // Пробуем вычислить как математическую функцию
+    if (expr_str.find("sin(") == 0) {
+        double arg = parseExpression<double>(expr_str.substr(4, expr_str.size() - 5)).evaluate(vars);
+        return std::sin(arg);
+    }
+    if (expr_str.find("cos(") == 0) {
+        double arg = parseExpression<double>(expr_str.substr(4, expr_str.size() - 5)).evaluate(vars);
+        return std::cos(arg);
+    }
+    if (expr_str.find("ln(") == 0) {
+        double arg = parseExpression<double>(expr_str.substr(3, expr_str.size() - 4)).evaluate(vars);
+        return std::log(arg);
+    }
+    if (expr_str.find("exp(") == 0) {
+        double arg = parseExpression<double>(expr_str.substr(4, expr_str.size() - 5)).evaluate(vars);
+        return std::exp(arg);
+    }
+
+    // Попробуем распарсить арифметические выражения
     try {
-        // Удалим скобки
-        expr.erase(remove(expr.begin(), expr.end(), '('), expr.end());
-        expr.erase(remove(expr.begin(), expr.end(), ')'), expr.end());
+        // Распарсим выражение как число
+        return std::stod(expr_str);
+    } catch (...) {}
 
-        return std::stod(expr);  // Работает ТОЛЬКО если осталось простое число
-    } catch (...) {
-        throw std::runtime_error("Cannot evaluate expression: " + expr);
-    }
+    // Пробуем парсить сложные выражения
+    Expression<double> parsed = parseExpression<double>(expr_str);
+    return parsed.evaluate(vars);  // Рекурсивный вызов
 }
+
 
 
 // ===== Символьная производная (double) =====

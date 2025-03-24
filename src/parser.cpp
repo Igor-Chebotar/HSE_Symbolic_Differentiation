@@ -123,15 +123,33 @@ private:
 
     Expression<T> parseNumber() {
         std::string num_str;
-        while (std::isdigit(peek()) || peek() == '.' || peek() == '-') {
+
+        // Обработка знака минус
+        if (peek() == '-') {
             num_str += get();
         }
+
+        bool has_digits = false;
+        while (std::isdigit(peek()) || peek() == '.') {
+            has_digits = true;
+            num_str += get();
+        }
+
+        if (!has_digits) {
+            throw std::runtime_error("Expected number at position " + std::to_string(pos_));
+        }
+
         std::istringstream iss(num_str);
         T value;
         iss >> value;
-        if (iss.fail()) throw std::runtime_error("Invalid number: " + num_str);
+        if (iss.fail()) {
+            throw std::runtime_error("Invalid number: " + num_str);
+        }
+
         return Expression<T>(value);
     }
+
+
 };
 
 // Функция для использования извне
